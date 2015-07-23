@@ -5,7 +5,7 @@ module Fluent
       Plugin.register_formatter("common_log", self)
 
       include HandleTagAndTimeMixin # If you wish to use tag_key, time_key, etc.
-      # fields are: host, user, time, method, path, code, size, referrer, agent
+      # fields are: host, user, time, method, path, code, size, referrer, agent, version
       config_param :fields, :string
 
       # This method does further processing. Configuration parameters can be
@@ -26,13 +26,17 @@ module Fluent
 
       # This is the method that formats the data output.
       def format(tag, time, record)
+        version = 'HTTP/1.1'
+        if @fields.key?(:version)
+            version = record[@fields[:version]]
+        end
         values = []
 
         values << dashIfEmpty(record[@fields[:host]])
         values << "-"
         values << dashIfEmpty(record[@fields[:user]])
         values << sprintf('[%s]', Time.at(time).strftime("%d/%b/%Y:%H:%M:%S %z"))
-        values << sprintf('"%s %s HTTP/1.1"', record[@fields[:method]], record[@fields[:path]])
+        values << sprintf('"%s %s %s"', record[@fields[:method]], record[@fields[:path]], version)
         values << record[@fields[:code]]
         values << record[@fields[:size]]
         values << sprintf('"%s"', dashIfEmpty(record[@fields[:referer]]))
